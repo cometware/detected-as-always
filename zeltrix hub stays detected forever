@@ -1,73 +1,1039 @@
-local Players = game:GetService('Players')
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local HubWorking = loadstring(game:HttpGet("https://pastebin.com/raw/qjTKCATe"))()
+if not HubWorking then
+    game.Players.LocalPlayer:Kick("Detected | Fixing Bugs | Adding More Buttons | Beta Test")
+end
+
+local Library = loadstring(game:HttpGet('https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet('https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet('https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/SaveManager.lua'))()
+
+local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
+local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+
+local HeadOff = Vector3.new(0, 0.5, 0)
+local LegOff = Vector3.new(0, 3, 0)
+
+local CurrentCamera = workspace.CurrentCamera
+
 local LocalPlayer = Players.LocalPlayer
+local Humanoid = LocalPlayer.Character.Humanoid
+local LastTool = nil
 
-local maxDistance = 30
+local Friends = {}
+local FO_S, FriendsOnline = pcall(LocalPlayer.GetFriendsOnline, LocalPlayer)
 
-getgenv().auraEnabled = not getgenv().auraEnabled
-
-local function findTool()
-	local tool = LocalPlayer.Backpack:FindFirstChildOfClass('Tool')
-
-	if not tool then
-		local character = LocalPlayer.Character
-
-		if character then
-			tool = character:FindFirstChildOfClass('Tool')
-		end
-	end
-
-	return tool
+for _, Friend in FO_S and FriendsOnline or {} do
+	Friends[Friend.VisitorId] = true
 end
 
-local function getToolHitRemote()
-	local tool = findTool()
+for _, Player in Players:GetPlayers() do
+	if Friends[Player.UserId] then continue end
+	Friends[Player.UserId] = LocalPlayer:IsFriendsWith(Player.UserId)
+end
 
-	if tool and tool ~= getgenv().lastTool then
-		getgenv().lastTool = tool
+Players.PlayerAdded:Connect(function(Player)
+	if Friends[Player.UserId] then return end
+	Friends[Player.UserId] = LocalPlayer:IsFriendsWith(Player.UserId)
+end)
 
-		local scr = tool:FindFirstChild('LocalScript')
+local Window = Library:CreateWindow({
+	Title = "Slap Battles | Zeltrix Hub",
+	Center = true,
+	AutoShow = true,
+	TabPadding = 8,
+	MenuFadeTime = 0.2,
+})
 
-		if scr then
-			for _, o in pairs(getgc()) do
-				if type(o) == 'function' and getfenv(o).script == scr then
-					local c = debug.getconstants(o)
-					
-					for _, p in pairs(c) do
-						if p == 'isInArena' then
-							for _, p2 in pairs(c) do
-								for _, j in pairs(ReplicatedStorage:GetChildren()) do
-									if j:IsA('RemoteEvent') and j.Name == p2 then
-										getgenv().hitRemote = j
-									end
-								end
-							end
+local Config = {
+	Misc = {
+        Abilities = {
+            Retro = false,
+            Admin = false,
+            PingPong = false,
+            JesterCards = false,
+            Shukuchi = false,
+
+            RetroDropdown = "Rocket Launcher",
+            AdminDropdown = "Anvil",
+        },
+        Visuals = {
+            Enabled = false,
+                
+            Boxes = false,
+            OutlineBoxes = false,
+            Tracers = false,
+            HealthBar = false,
+            OutlineHealthBar = false,
+
+            BoxColor = Color3.fromRGB(255, 255, 255),
+            OutlineBoxColor = Color3.fromRGB(0, 0, 0),
+            TracerColor = Color3.fromRGB(255, 255, 255),                
+            OutlineHealthBarColor = Color3.fromRGB(0, 0, 0),
+        },
+        Badges = {
+            JetFarm = false,
+            PhaseFarm = false,
+        },
+        Features = {
+            SlappleFarm = false,
+        }
+	},
+    Player = {
+        Movement = {
+            Enabled = false,
+
+            WalkSpeed = 16,
+            JumpPower = 50,
+            Gravity = 196.2
+        }
+    },
+    Combat = {
+        GloveSettings = {
+            SlapAura = false,
+            IgnoreFriends = false,
+            SlapAnimation = false,
+
+            AuraRadius = 30,
+            SlapCooldown = 0.1,
+
+            GloveHits = {
+                Default = ReplicatedStorage.b,
+                Extended = ReplicatedStorage.b,
+                Dual = ReplicatedStorage.GeneralHit,
+                Diamond = ReplicatedStorage.DiamondHit,
+                ZZZZZZZ = ReplicatedStorage.ZZZZZZZHit,
+                Brick = ReplicatedStorage.BrickHit,
+                Snow = ReplicatedStorage.SnowHit,
+                Pull = ReplicatedStorage.PullHit,
+                Flash = ReplicatedStorage.FlashHit,
+                Spring = ReplicatedStorage.springhit,
+                Swapper = ReplicatedStorage.HitSwapper,
+                Bull = ReplicatedStorage.BullHit,
+                Dice = ReplicatedStorage.DiceHit,
+                Ghost = ReplicatedStorage.GhostHit,
+                Stun = ReplicatedStorage.HtStun,
+                Killstreak = ReplicatedStorage.KSHit,
+                Blocked = ReplicatedStorage.BlockedHit,
+                Bomb = ReplicatedStorage.BombHit,
+                Bubble = ReplicatedStorage.BubbleHit,
+                CULT = ReplicatedStorage.CULTHit,
+                Cloud = ReplicatedStorage.CloudHit,
+                Conveyor = ReplicatedStorage.CULTHit,
+                Custom = ReplicatedStorage.CustomHit,
+                Defense = ReplicatedStorage.DefenseHit,
+                Detonator = ReplicatedStorage.DetonatorHit,
+                Dominance = ReplicatedStorage.DominanceHit,
+                Golden = ReplicatedStorage.GoldenHit,
+                Hitman = ReplicatedStorage.HitmanHit,
+                Ice = ReplicatedStorage.IceHit,
+                Link = ReplicatedStorage.LinkHit,
+                Jet = ReplicatedStorage.JetHit,
+                Magnet = ReplicatedStorage.MagnetHIT,
+                Mail = ReplicatedStorage.MailHit,
+                Mitten = ReplicatedStorage.MittenHit,
+                Null = ReplicatedStorage.NullHit,
+                Orbit = ReplicatedStorage.Orbihit,
+                Phantom = ReplicatedStorage.PhantomHit,
+                Plague = ReplicatedStorage.PlagueHit,
+                Pusher = ReplicatedStorage.PusherHit,
+                Replica = ReplicatedStorage.ReplicaHit,
+                Reaper = ReplicatedStorage.ReaperHit,
+                Retro = ReplicatedStorage.RetroHit,
+                Rojo = ReplicatedStorage.RojoHit,
+                Reverse = ReplicatedStorage.ReverseHit,
+                Rocky = ReplicatedStorage.RockyHit,
+                Shard = ReplicatedStorage.ShardHIT,
+                Shukuchi = ReplicatedStorage.ShukuchiHit,
+                Slapple = ReplicatedStorage.SlappleHit,
+                Speedrun = ReplicatedStorage.Speedrunhit,
+                Spy = ReplicatedStorage.SpyHit,
+                Thor = ReplicatedStorage.ThorHit,
+                ["Untitled Tag Glove"] = ReplicatedStorage.UTGHit,
+                Wormhole = ReplicatedStorage.WormHit,
+                bob = ReplicatedStorage.bobhit,
+                Adios = ReplicatedStorage.hitAdios,
+                Anchor = ReplicatedStorage.hitAnchor,
+                bus = ReplicatedStorage.hitbus,
+                Nightmare = ReplicatedStorage.nightmarehit,
+                potato = ReplicatedStorage.potatohit,
+                Error = ReplicatedStorage.Errorhit,
+                Duelist = ReplicatedStorage.DuelistHit,
+                Rhythm = ReplicatedStorage.rhythmhit,
+                rob = ReplicatedStorage.robhit,
+                spin = ReplicatedStorage.spinhit,
+                woah = ReplicatedStorage.woahHit,
+                Gummy = ReplicatedStorage.GeneralHit,
+                buddies = ReplicatedStorage.buddiesHIT,
+                Engineer = ReplicatedStorage.engiehit,
+                Fort = ReplicatedStorage.Fort,
+                Space = ReplicatedStorage.HtSpace,
+                Boomerang = ReplicatedStorage.BoomerangH,
+                Disarm = ReplicatedStorage.DisarmH,
+                ["The Flex"] = ReplicatedStorage.FlexHit,
+                Warp = ReplicatedStorage.WarpHt,
+                Hive = ReplicatedStorage.GeneralHit,
+                MR = ReplicatedStorage.MisterHit,
+                ["T H I C K"] = ReplicatedStorage.GeneralHit,
+                ["Za Hando"] = ReplicatedStorage.zhramt,
+                Tycoon = ReplicatedStorage.GeneralHit,
+                Avatar = ReplicatedStorage.GeneralHit,
+                Frostbite = ReplicatedStorage.GeneralHit,
+                Coil = ReplicatedStorage.GeneralHit,
+                Balloony = ReplicatedStorage.GeneralHit,
+                Shackle = ReplicatedStorage.GeneralHit,
+                Stop = ReplicatedStorage.GeneralHit,
+                Track = ReplicatedStorage.GeneralHit,
+                Prop = ReplicatedStorage.GeneralHit,
+                Shield = ReplicatedStorage.GeneralHit,
+                Booster = ReplicatedStorage.GeneralHit,
+                ["Ping Pong"] = ReplicatedStorage.GeneralHit,
+                Baller = ReplicatedStorage.GeneralHit,
+                ["Home Run"] = ReplicatedStorage.GeneralHit,
+                Whirlwind = ReplicatedStorage.GeneralHit,
+                Slicer = ReplicatedStorage.GeneralHit,
+                Excavator = ReplicatedStorage.GeneralHit,
+                Pocket = ReplicatedStorage.GeneralHit,
+                Grapple = ReplicatedStorage.GeneralHit,
+                Gravity = ReplicatedStorage.GeneralHit,
+                Parry = ReplicatedStorage.GeneralHit,
+                Jebaited = ReplicatedStorage.GeneralHit,
+                Meteor = ReplicatedStorage.GeneralHit,
+                Oven = ReplicatedStorage.GeneralHit,
+                ["Guardian Angel"] = ReplicatedStorage.GeneralHit,
+                Sun = ReplicatedStorage.GeneralHit,
+                Ferryman = ReplicatedStorage.GeneralHit,
+                Blackhole = ReplicatedStorage.GeneralHit,
+                Blink = ReplicatedStorage.GeneralHit,
+                Tableflip = ReplicatedStorage.GeneralHit,
+                Slapstick = ReplicatedStorage.GeneralHit,
+                Beatdown = ReplicatedStorage.GeneralHit,
+                Chicken = ReplicatedStorage.GeneralHit,
+                Bonk = ReplicatedStorage.GeneralHit,
+                Sbeve = ReplicatedStorage.GeneralHit,
+                Golem = ReplicatedStorage.GeneralHit,
+                Grab = ReplicatedStorage.GeneralHit,
+                Virus = ReplicatedStorage.GeneralHit,
+                UFO = ReplicatedStorage.GeneralHit,
+                Pillow = ReplicatedStorage.GeneralHit,
+                Clock = ReplicatedStorage.GeneralHit,
+                Poltergeist = ReplicatedStorage.GeneralHit,
+                Bind = ReplicatedStorage.GeneralHit,
+                Materialize = ReplicatedStorage.GeneralHit,
+                Fan = ReplicatedStorage.GeneralHit,
+                Water = ReplicatedStorage.GeneralHit,
+                Relude = ReplicatedStorage.GeneralHit,
+                Hunter = ReplicatedStorage.GeneralHit,
+                Wrench = ReplicatedStorage.GeneralHit,
+                Siphon = ReplicatedStorage.GeneralHit,
+                Spoonful = ReplicatedStorage.GeneralHit,
+                Plank = ReplicatedStorage.GeneralHit,
+                Knockoff = ReplicatedStorage.GeneralHit,
+                Demolition = ReplicatedStorage.GeneralHit,
+                Lamp = ReplicatedStorage.GeneralHit,
+                Divebomb = ReplicatedStorage.GeneralHit,
+                Glovel = ReplicatedStorage.GeneralHit,
+                Run = ReplicatedStorage.GeneralHit,
+                Firework = ReplicatedStorage.GeneralHit,
+                Joust = ReplicatedStorage.GeneralHit,
+                Admin = ReplicatedStorage.GeneralHit,
+                Beachball = ReplicatedStorage.GeneralHit,
+                Shotgun = ReplicatedStorage.GeneralHit,
+                Pan = ReplicatedStorage.GeneralHit,
+                Blasphemy = ReplicatedStorage.GeneralHit,
+                IceSkate = ReplicatedStorage.GeneralHit,
+                Santa = ReplicatedStorage.GeneralHit,
+                Scythe = ReplicatedStorage.GeneralHit,
+                Jester = ReplicatedStorage.GeneralHit,
+                Druid = ReplicatedStorage.GeneralHit,
+                Alchemist = ReplicatedStorage.GeneralHit,
+                Necromancer = ReplicatedStorage.GeneralHit,
+                Lure = ReplicatedStorage.GeneralHit,
+                Hammer = ReplicatedStorage.GeneralHit,
+                Counter = ReplicatedStorage.GeneralHit,
+                Kraken = ReplicatedStorage.GeneralHit,
+                Psycho = ReplicatedStorage.GeneralHit,
+                Quake = ReplicatedStorage.GeneralHit,
+                Recall = ReplicatedStorage.GeneralHit,
+                Boogie = ReplicatedStorage.GeneralHit,
+                Sparky = ReplicatedStorage.GeneralHit,
+                Berserk = ReplicatedStorage.GeneralHit,
+                Kinetic = ReplicatedStorage.GeneralHit,
+                Flamarang = ReplicatedStorage.GeneralHit,
+                Goofy = ReplicatedStorage.GeneralHit,
+                Voodoo = ReplicatedStorage.GeneralHit,
+                Obby = ReplicatedStorage.GeneralHit,
+                ["🗿"] = ReplicatedStorage.GeneralHit,
+                Fish = ReplicatedStorage.GeneralHit,
+                RNG = ReplicatedStorage.GeneralHit,
+                Elude = ReplicatedStorage.GeneralHit,
+                Tinkerer = ReplicatedStorage.GeneralHit,
+                Glitch = ReplicatedStorage.GeneralHit,
+                Snowball = ReplicatedStorage.GeneralHit,
+                Charge = ReplicatedStorage.GeneralHit,
+                Rattlebones = ReplicatedStorage.GeneralHit,
+                Chain = ReplicatedStorage.GeneralHit,
+                Hybrid = ReplicatedStorage.GeneralHit,
+                Phase = ReplicatedStorage.PhaseH,
+                Rage = ReplicatedStorage.GeneralHit,
+                Jupiter = ReplicatedStorage.GeneralHit,
+                Moon = ReplicatedStorage.GeneralHit,
+                Trap = ReplicatedStorage.traphi,
+                Titan = ReplicatedStorage.GeneralHit,
+                Acrobat = ReplicatedStorage.GeneralHit,
+                MEGAROCK = ReplicatedStorage.GeneralHit,
+                Redacted = ReplicatedStorage.GeneralHit,
+                ["64"] = ReplicatedStorage.GeneralHit,
+                Roguelike = ReplicatedStorage.GeneralHit,
+                Barrel = ReplicatedStorage.GeneralHit,
+                Lawnmower = ReplicatedStorage.GeneralHit,
+                Boxer = ReplicatedStorage.GeneralHit,
+                Confusion = ReplicatedStorage.GeneralHit,
+                Overkill = ReplicatedStorage.Overkillhit,
+                Divert = ReplicatedStorage.GeneralHit,
+                Equalizer = ReplicatedStorage.GeneralHit,
+                Leash = ReplicatedStorage.GeneralHit,
+                ["the schlob"] = ReplicatedStorage.GeneralHit,
+                ["el gato"] = ReplicatedStorage.GeneralHit,
+            }
+        }
+    }
+}
+
+local Tabs = {
+	Home = Window:AddTab("Home"),
+	Combat = Window:AddTab("Combat"),
+	Misc = Window:AddTab("Misc"),
+    Visuals = Window:AddTab("Visuals"),
+	Player = Window:AddTab("Player"),
+    Settings = Window:AddTab("Settings"),
+}
+
+local Sections = {
+    Information = Tabs.Home:AddLeftGroupbox("Information"),
+
+	Visuals = Tabs.Visuals:AddLeftGroupbox("Visuals"),
+
+    Abilities = Tabs.Misc:AddLeftGroupbox("Abilities"),
+    AbilitiesConfiguration = Tabs.Misc:AddRightGroupbox("Configuration"),
+
+
+    Badges = Tabs.Misc:AddLeftGroupbox("Badges"),
+    Features = Tabs.Misc:AddRightGroupbox("Features"),
+
+    Movement = Tabs.Player:AddLeftGroupbox("Movement"),
+
+    GloveSettings = Tabs.Combat:AddLeftGroupbox("Glove Settings"),
+}
+
+function GetClosestPlayer()
+    local ClosestPlayer = nil
+    local ClosestDistance = math.huge
+
+    for _, Player in ipairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer then
+            local Distance = (Player.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            if Distance < ClosestDistance then
+                ClosestPlayer = Player
+                ClosestDistance = Distance
+            end
+        end
+    end
+
+    return ClosestPlayer
+end
+
+function CheckGloveEvent(GloveValue)
+   local Hit = Config.Combat.GloveSettings.GloveHits[GloveValue]
+   if Hit then
+    return Hit
+   else
+    return warn("This glove called: ".. GloveValue.. " is not supported yeet, wait for new in future")
+   end
+end
+
+local BlockedRemotes = {[ReplicatedStorage.Ban] = "FireServer", [ReplicatedStorage.GRAB] = "FireServer" ,[ReplicatedStorage.AdminGUI] = "FireServer", [ReplicatedStorage.WalkSpeedChanged] = "FireServer"}
+
+do
+    -- Bypass Anti Cheat
+
+    if hookmetamethod and getnamecallmethod then
+        print("Supported Executor, Using hookmetamethod() and getnamecallmethod()")
+        local Bypass; Bypass = hookmetamethod(game, "__namecall", function(Remote, ...)
+            if BlockedRemotes[Remote] == true or BlockedRemotes[Remote] == getnamecallmethod() then return end
+            if getnamecallmethod() == "PreloadAsync" and Remote == game:GetService("CoreGui") then
+                return
+            end
+            return Bypass(Remote, ...)
+        end)
+    else
+        print("Unsupported Executor, Falling back to :Destroy()")
+        for i in BlockedRemotes do
+            if i.Parent then
+                i:Destroy()
+            end
+        end
+    end
+end
+
+do
+    -- Another Bypass Anti Cheat
+
+    local CmdrClient = ReplicatedStorage:FindFirstChild("CmdrClient")
+    if CmdrClient then
+        local function DisableDescendants(Parent)
+            for _, Descendant in ipairs(Parent:GetChildren()) do
+                if Descendant:IsA("Script") or Descendant:IsA("LocalScript") then
+                    Descendant.Disabled = true
+                elseif Descendant:IsA("RemoteEvent") or Descendant:IsA("RemoteFunction") then
+                    Descendant.Parent = nil
+                end
+            end
+        end
+
+        if CmdrClient:IsA("Script") or CmdrClient:IsA("LocalScript") then
+            CmdrClient.Disabled = true
+        end
+
+        DisableDescendants(CmdrClient)
+
+        local TypesFolder = CmdrClient:FindFirstChild("Types")
+        local CommandsFolder = CmdrClient:FindFirstChild("Commands")
+
+        if TypesFolder then
+            TypesFolder:Destroy()
+        end
+
+        if CommandsFolder then
+            CommandsFolder:Destroy()
+        end
+
+        print('Anti Cheat Bypasssed')
+    end
+end
+
+do
+    Sections.Information:AddLabel('Zeltrixware.gg\n\nWork Date: 01/12/2024', true)
+    Sections.Information:AddButton({
+        Text = 'Discord Server',
+        DoubleClick = false,
+        Tooltip = nil,
+        Func = function()
+            setclipboard("https://discord.gg/cHuwwuhV3N")
+        end,
+    })
+
+    Sections.Information:AddButton({
+        Text = 'Infinite Yield',
+        DoubleClick = false,
+        Tooltip = nil,
+        Func = function()
+            loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+        end,
+    })
+end
+
+do
+    Sections.Features:AddToggle('SlappleFarm', {
+        Text = 'Slapple Farm',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Misc.Features.SlappleFarm = Value
+            while Config.Misc.Features.SlappleFarm == true do
+				for _, v in ipairs(workspace.Arena.island5.Slapples:GetDescendants()) do
+					if LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("entered") and v.Name == "Glove" and v:FindFirstChildWhichIsA("TouchTransmitter") then
+						firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 0)
+						firetouchinterest(LocalPlayer.Character.HumanoidRootPart, v, 1)
+					end
+				end
+                task.wait(0.5)
+            end
+        end
+    })
+end
+
+do
+
+    Sections.Badges:AddToggle('JetFarm', {
+        Text = 'Jet Farm',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Misc.Badges.JetFarm = Value
+            while Config.Misc.Badges.JetFarm == true do
+                for _, v in ipairs(workspace:GetChildren()) do
+                    if v.Name == "JetOrb" and v.TouchInterest then
+                        firetouchinterest(LocalPlayer.Character:WaitForChild("Head"), v, 0)
+						firetouchinterest(LocalPlayer.Character:WaitForChild("Head"), v, 1)
+                    end
+                end
+                task.wait()
+            end
+        end
+    })
+
+    Sections.Badges:AddToggle('PhaseFarm', {
+        Text = 'Phase Farm',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Misc.Badges.PhaseFarm = Value
+            while Config.Misc.Badges.PhaseFarm == true do
+                for _, v in ipairs(workspace:GetChildren()) do
+                    if v.Name == "PhaseOrb" and v.TouchInterest then
+                        firetouchinterest(LocalPlayer.Character:WaitForChild("Head"), v, 0)
+						firetouchinterest(LocalPlayer.Character:WaitForChild("Head"), v, 1)
+                    end
+                end
+                task.wait()
+            end
+        end
+    })
+
+    Sections.Badges:AddDivider()
+
+    Sections.Badges:AddButton({
+        Text = 'Get Brazil Badge',
+        DoubleClick = false,
+        Tooltip = nil,
+        Func = function()
+            LocalPlayer.Character.HumanoidRootPart.CFrame = workspace.Lobby.Decoration.brazil.portal.CFrame
+        end,
+    })
+
+    Sections.Badges:AddButton({
+        Text = 'Get Court Evidence Badge',
+        DoubleClick = false,
+        Tooltip = nil,
+        Func = function()
+            fireclickdetector(workspace.Lobby.Decoration.Scene.knofe.ClickDetector)
+        end,
+    })
+
+    Sections.Badges:AddButton({
+        Text = 'Get Duck Badge',
+        DoubleClick = false,
+        Tooltip = nil,
+        Func = function()
+            fireclickdetector(workspace.Arena["default island"]["Rubber Ducky"].ClickDetector)
+        end,
+    })
+
+    Sections.Badges:AddButton({
+        Text = 'Get The Lone Orange Badge',
+        DoubleClick = false,
+        Tooltip = nil,
+        Func = function()
+            fireclickdetector(workspace.Arena.island5.Orange.ClickDetector)
+        end,
+    })
+end
+
+do
+    Sections.GloveSettings:AddToggle('SlapAura', {
+        Text = 'Slap Aura',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Combat.GloveSettings.SlapAura = Value
+            while Config.Combat.GloveSettings.SlapAura == true do
+                for _, Player in ipairs(Players:GetPlayers()) do
+                    if Player ~= LocalPlayer and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and Player.Character then
+                        if Player.Character:FindFirstChild("entered") and Player.Character:FindFirstChild("HumanoidRootPart") and Player.Character:FindFirstChild("rock") == nil and Player.Character.HumanoidRootPart.BrickColor ~= BrickColor.new("New Yeller") and LocalPlayer.Character:FindFirstChildOfClass("Tool") and Player.Character.Ragdolled.Value == false then
+                            if Player.Character.Head:FindFirstChild("UnoReverseCard") == nil or LocalPlayer.leaderstats.Glove.Value == "Error" then
+                                if Config.Combat.GloveSettings.IgnoreFriends and Friends[Player.UserId] then 
+                                    continue
+                                elseif Friends[Player.UserId] == nil then
+                                    Friends[Player.UserId] = LocalPlayer:IsFriendsWith(Player.UserId)
+                                end
+
+                                local Distance = (Player.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                                local GloveEvent = CheckGloveEvent(LocalPlayer.leaderstats.Glove.Value)
+
+                                if Config.Combat.GloveSettings.AuraRadius >= Distance then
+                                    GloveEvent:FireServer(Player.Character:WaitForChild("Left Arm"))
+                                    if Distance < 6 and Config.Combat.GloveSettings.SlapAnimation then
+                                        LocalPlayer.Character:FindFirstChildWhichIsA("Tool"):Activate()
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+
+                task.wait(Config.Combat.GloveSettings.SlapCooldown)
+            end
+        end
+    }):AddKeyPicker('KeyPicker', {
+        Default = 'Q',
+        SyncToggleState = false,
+        Mode = 'Toggle',
+        Text = 'Quick Toggle Bind',
+        NoUI = false,
+        Callback = function()
+            Toggles.SlapAura:SetValue(not Toggles.SlapAura.Value)
+        end,
+    })
+
+    Sections.GloveSettings:AddToggle('IgnoreFriends', {
+        Text = 'Ignore Friends',
+        Default = false,
+        Tooltip = "Prevent your friends getting hit by you",
+        Callback = function(Value)
+            Config.Combat.GloveSettings.IgnoreFriends = Value
+        end
+    })
+
+    Sections.GloveSettings:AddToggle('SlapAnimation', {
+        Text = 'Slap Animation',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Combat.GloveSettings.SlapAnimation = Value
+        end
+    })
+
+    Sections.GloveSettings:AddSlider('AuraRadius', {
+        Text = 'Aura Radius',
+        Default = 30,
+        Min = 0,
+        Max = 30,
+        Rounding = 1,
+        Compact = false,
+        Callback = function(Value)
+            Config.Combat.GloveSettings.AuraRadius = Value
+        end
+    })
+
+    Sections.GloveSettings:AddSlider('SlapCooldown', {
+        Text = 'Slap Cooldown',
+        Default = 0.1,
+        Min = 0,
+        Max = 2,
+        Rounding = 1,
+        Compact = false,
+        Callback = function(Value)
+            Config.Combat.GloveSettings.SlapCooldown = Value
+        end
+    })
+end
+
+do
+    Sections.Movement:AddButton({
+        Text = 'Apply Boost',
+        DoubleClick = false,
+        Tooltip = nil,
+        Func = function()
+            local Value = not Value or false
+
+            while Value == true do
+                Humanoid.WalkSpeed = Config.Player.Movement.WalkSpeed
+                Humanoid.JumpPower = Config.Player.Movement.JumpPower
+                workspace.Gravity = Config.Player.Movement.Gravity
+                task.wait()
+            end
+        end,
+    })
+
+    Sections.Movement:AddSlider('WalkSpeed', {
+        Text = 'Walk Speed',
+        Default = 16,
+        Min = 16,
+        Max = 500,
+        Rounding = 1,
+        Compact = false,
+        Callback = function(Value)
+            Config.Player.Movement.WalkSpeed = Value
+        end
+    })
+
+    Sections.Movement:AddSlider('JumpPower', {
+        Text = 'Jump Power',
+        Default = 50,
+        Min = 50,
+        Max = 500,
+        Rounding = 1,
+        Compact = false,
+        Callback = function(Value)
+            Config.Player.Movement.JumpPower = Value
+        end
+    })
+
+    Sections.Movement:AddSlider('Gravity', {
+        Text = 'Gravity',
+        Default = 196.2,
+        Min = 0,
+        Max = 500,
+        Rounding = 1,
+        Compact = false,
+        Callback = function(Value)
+            Config.Player.Movement.Gravity = Value
+        end
+    })
+end
+
+do
+    Sections.Visuals:AddToggle('ShowVisuals', {
+        Text = 'Show Visuals',
+        Default = false,
+        Tooltip = nil,
+
+        Callback = function(Value)
+            Config.Misc.Visuals.Enabled = Value
+        end
+    })
+    
+    Sections.Visuals:AddToggle('ShowBoxes', {
+        Text = 'Show Boxes',
+        Default = false, 
+        Tooltip = nil,
+
+        Callback = function(Value)
+            Config.Misc.Visuals.Boxes = Value
+        end
+    }):AddColorPicker('BoxColor', {
+        Default = Color3.fromRGB(255, 255, 255),
+        Title = 'Box Color',
+        Transparency = 0,
+        Callback = function(Value)
+            Config.Misc.Visuals.BoxColor = Value
+        end
+    })
+    
+    Sections.Visuals:AddToggle('ShowHealthBar', {
+        Text = 'Show Health Bar',
+        Default = false,
+        Tooltip = nil,
+
+        Callback = function(Value)
+            Config.Misc.Visuals.HealthBar = Value
+        end
+    })
+    
+    Sections.Visuals:AddToggle('ShowTracers', {
+        Text = 'Show Tracers',
+        Default = false,
+        Tooltip = nil,
+
+        Callback = function(Value)
+            Config.Misc.Visuals.Tracers = Value
+        end
+    }):AddColorPicker('TracerColor', {
+        Default = Color3.fromRGB(255, 255, 255),
+        Title = 'Tracer Color',
+        Transparency = 0,
+        Callback = function(Value)
+            Config.Misc.Visuals.TracerColor = Value
+        end
+    })
+    
+    Sections.Visuals:AddToggle('OutlineBoxes', {
+        Text = 'Outline Boxes',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            print(Value)
+            Config.Misc.Visuals.OutlineBoxes = Value
+        end
+    }):AddColorPicker('OutlineBoxColor', {
+        Default = Color3.fromRGB(0,0,0), 
+        Title = 'Outline Box Color',
+        Callback = function(Value)
+            Config.Misc.Visuals.OutlineBoxColor = Value
+        end
+    })
+    
+    Sections.Visuals:AddToggle('OutlineHealthBar', {
+        Text = 'Outline Health Bar',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Misc.Visuals.OutlineHealthBar = Value
+        end
+    }):AddColorPicker('OutlineHealthBarColor', {
+        Default = Color3.fromRGB(0,0,0), 
+        Title = 'Outline Health Bar Color',
+        Callback = function(Value)
+            Config.Misc.Visuals.OutlineHealthBarColor = Value
+        end
+    })
+end
+
+do
+    Sections.Abilities:AddToggle('SpamAdminAbility', {
+        Text = 'Spam Admin Ability',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Misc.Abilities.Admin = Value
+            while Config.Misc.Abilities.Admin == true do
+                ReplicatedStorage.AdminAbility:FireServer(Config.Misc.Abilities.AdminDropdown)
+                task.wait()
+            end
+        end
+    })
+
+    Sections.Abilities:AddToggle('SpamRetroAbility', {
+        Text = 'Spam Retro Ability',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Misc.Abilities.Retro = Value
+            while Config.Misc.Abilities.Retro == true do
+                ReplicatedStorage.RetroAbility:FireServer(Config.Misc.Abilities.RetroDropdown)
+                task.wait()
+            end
+        end
+    })
+
+    Sections.Abilities:AddToggle('SpamPingPongAbility', {
+        Text = 'Spam Ping Pong Ability',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Misc.Abilities.PingPong = Value
+            if LocalPlayer.leaderstats.Glove.Value == "Ping Pong" then
+                while Config.Misc.Abilities.PingPong == true do
+                    ReplicatedStorage.GeneralAbility:FireServer()
+                    local Players = Players:GetChildren()
+                    local RandomPlayer = Players[math.random(1, #Players)]
+
+                    repeat RandomPlayer = Players[math.random(1, #Players)] until RandomPlayer ~= LocalPlayer and RandomPlayer.Character:FindFirstChild("rock") == nil and RandomPlayer.Character.Head:FindFirstChild("UnoReverseCard") == nil and RandomPlayer.Character:FindFirstChild("entered")
+                    
+                    if RandomPlayer ~= LocalPlayer.Name and RandomPlayer.Character then
+                        for _, v in pairs(workspace:GetChildren()) do
+                            if v:IsA("Part") and v.Name == LocalPlayer.Name.."_PingPongBall" then
+                                v.CFrame = RandomPlayer.Character.HumanoidRootPart.CFrame
+                            end
+                        end
+                    end
+
+                    task.wait()
+                end                
+            else
+                if not Config.Misc.Abilities.PingPong then return end
+                Notification:Notify(
+                    {Title = "Output: Error", Description = "Equip Ping Pong Glove"},
+                    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 2, Type = "image"},
+                    {Image = "http://www.roblox.com/asset/?id=96662231412196", ImageColor = Color3.fromRGB(255, 255, 255)}
+                 )
+            end
+        end
+    })
+
+    Sections.Abilities:AddToggle('SpamJesterCardsAbility', {
+        Text = 'Spam Jester Cards Ability',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Misc.Abilities.JesterCards = Value
+            if LocalPlayer.leaderstats.Glove.Value == "Jester" then
+                while Config.Misc.Abilities.JesterCards == true do
+                    local ClosestPlayer = GetClosestPlayer()
+                    if ClosestPlayer then
+                        ReplicatedStorage.GeneralAbility:FireServer("Ability3", ClosestPlayer)
+                    end
+                    task.wait()
+                end  
+            else
+                if not Config.Misc.Abilities.JesterCards then return end
+                Notification:Notify(
+                    {Title = "Output: Error", Description = "Equip Jester Glove"},
+                    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 2, Type = "image"},
+                    {Image = "http://www.roblox.com/asset/?id=96662231412196", ImageColor = Color3.fromRGB(255, 255, 255)}
+                )
+            end
+        end
+    })
+
+    Sections.Abilities:AddToggle('SpamShukuchiAbility', {
+        Text = 'Spam Shukuchi Ability',
+        Default = false,
+        Tooltip = nil,
+        Callback = function(Value)
+            Config.Misc.Abilities.Shukuchi = Value
+            if LocalPlayer.leaderstats.Glove.Value == "Shukuchi" then
+                while Config.Misc.Abilities.Shukuchi == true do
+                    for _, v in pairs(Players:GetPlayers()) do
+                        if v ~= LocalPlayer and v.Character then
+                            if v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("rock") == nil and v.Character.HumanoidRootPart.BrickColor ~= BrickColor.new("New Yeller") and v.Character.Ragdolled.Value == false and v.Character.Head:FindFirstChild("RedEye") == nil then
+                                if not v.Character.Head:FindFirstChild("UnoReverseCard") then
+                                    ReplicatedStorage.SM:FireServer(v)
+                                end
+                            end
+                        end
+                    end
+                    task.wait()
+                end  
+            else
+                if not Config.Misc.Abilities.Shukuchi then return end
+                Notification:Notify(
+                    {Title = "Output: Error", Description = "Equip Shukuchi Glove"},
+                    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 2, Type = "image"},
+                    {Image = "http://www.roblox.com/asset/?id=96662231412196", ImageColor = Color3.fromRGB(255, 255, 255)}
+                )
+            end
+        end
+    })
+
+    Sections.AbilitiesConfiguration:AddDropdown('AdminDropdown', {
+        Values = {'Anvil', 'Fling', 'Invisibility'},
+        Default = 1,
+        Multi = false,
+        Text = 'Admin Dropdown',
+        Tooltip = nil, 
+        Callback = function(Value)
+            Config.Misc.Abilities.AdminDropdown = Value
+        end
+    })    
+
+    Sections.AbilitiesConfiguration:AddDropdown('RetroDropdown', {
+        Values = {'Rocket Launcher', 'Ban Hammer', 'Bomb'},
+        Default = 1,
+        Multi = false,
+        Text = 'Retro Dropdown',
+        Tooltip = nil, 
+        Callback = function(Value)
+            Config.Misc.Abilities.RetroDropdown = Value
+        end
+    })    
+end
+
+function CreateESP(Player)
+	local BoxOutline = Drawing.new("Square")
+	local Box = Drawing.new("Square")
+	
+	local HealthBarOutline = Drawing.new("Square")
+	local HealthBar = Drawing.new("Square")
+	
+	local Tracer = Drawing.new("Line")
+	
+	BoxOutline.Color = Color3.fromRGB(0, 0, 0)
+	BoxOutline.Thickness = 3
+	BoxOutline.Transparency = 1
+	BoxOutline.Visible = false
+    BoxOutline.Filled = false
+
+	Box.Color = Color3.fromRGB(255, 255, 255)
+	Box.Thickness = 1
+	Box.Transparency = 1
+	Box.Visible = false
+    Box.Filled = false
+
+	HealthBarOutline.Thickness = 3
+	HealthBarOutline.Filled = false
+	HealthBarOutline.Color = Color3.fromRGB(0, 0, 0)
+	HealthBarOutline.Transparency = 1
+	HealthBarOutline.Visible = false
+
+	HealthBar.Thickness = 1
+	HealthBar.Filled = true
+	HealthBar.Transparency = 1 
+	HealthBar.Visible = false
+
+	Tracer.Visible = false
+	Tracer.Color = Color3.fromRGB(255, 255, 255)
+	Tracer.Thickness = 1
+	Tracer.Transparency = 1
+	
+	local function BoxESP()
+		RunService.RenderStepped:Connect(function()
+			if Player.Character and Player.Character:FindFirstChild("Humanoid") and Player.Character:FindFirstChild("HumanoidRootPart") and Player ~= LocalPlayer then
+				local Humanoid = Player.Character.Humanoid
+				if Humanoid.Health > 0 then
+					local RootPart = Player.Character.HumanoidRootPart
+					local Head = Player.Character.Head
+
+					local RootPos, OnScreen = CurrentCamera:WorldToViewportPoint(RootPart.Position)
+					local HeadPos = CurrentCamera:WorldToViewportPoint(Head.Position + HeadOff)
+					local LegPos = CurrentCamera:WorldToViewportPoint(RootPart.Position - LegOff)
+
+					if OnScreen and Config.Misc.Visuals.Enabled then		
+						if Config.Misc.Visuals.Boxes then
+							Box.Color = Config.Misc.Visuals.BoxColor
+							Box.Visible = true
+						else
+							Box.Visible = false
 						end
+
+						if Config.Misc.Visuals.OutlineBoxes then
+							BoxOutline.Color = Config.Misc.Visuals.OutlineBoxColor
+							BoxOutline.Visible = true
+						else
+							BoxOutline.Visible = false
+						end
+
+						if Config.Misc.Visuals.HealthBar then
+							HealthBar.Visible = true
+						else
+							HealthBar.Visible = false
+						end
+						
+						if Config.Misc.Visuals.OutlineHealthBar then
+							HealthBarOutline.Visible = Config.Misc.Visuals.OutlineHealthBarColor
+							HealthBarOutline.Color = Config.Misc.Visuals.OutlineHealthBarColor
+						else
+							HealthBarOutline.Visible = false
+						end
+						
+						if Config.Misc.Visuals.Tracers then
+							Tracer.Visible = true
+							Tracer.Color = Config.Misc.Visuals.TracerColor
+						else
+							Tracer.Visible = false
+						end
+						
+						BoxOutline.Size = Vector2.new(1000 / RootPos.Z, HeadPos.Y - LegPos.Y)
+						BoxOutline.Position = Vector2.new(RootPos.X - BoxOutline.Size.X / 2, RootPos.Y - BoxOutline.Size.Y / 2)
+
+						Box.Size = Vector2.new(1000 / RootPos.Z, HeadPos.Y - LegPos.Y)
+						Box.Position = Vector2.new(RootPos.X - Box.Size.X / 2, RootPos.Y - Box.Size.Y / 2)
+
+						HealthBarOutline.Size = Vector2.new(2, HeadPos.Y - LegPos.Y)
+						HealthBarOutline.Position = BoxOutline.Position - Vector2.new(6, 0)
+
+						local HealthPercentage = Humanoid.Health / Humanoid.MaxHealth
+
+						HealthBar.Size = Vector2.new(2, (HeadPos.Y - LegPos.Y) * HealthPercentage)
+						HealthBar.Position = Vector2.new(Box.Position.X - 6, Box.Position.Y + (1 / HealthBar.Size.Y))
+						HealthBar.Color = Color3.fromRGB(255 * (1 - HealthPercentage), 255 * HealthPercentage, 0)
+
+						Tracer.From = Vector2.new(CurrentCamera.ViewportSize.X / 2, CurrentCamera.ViewportSize.Y / 1)
+						Tracer.To = Vector2.new(RootPos.X, RootPos.Y)
+					else
+						BoxOutline.Visible = false
+						Box.Visible = false
+						HealthBarOutline.Visible = false
+						HealthBar.Visible = false
+						Tracer.Visible = false
 					end
+				else
+					BoxOutline.Visible = false
+					Box.Visible = false
+					HealthBarOutline.Visible = false
+					HealthBar.Visible = false
+					Tracer.Visible = false
 				end
+			else
+				BoxOutline.Visible = false
+				Box.Visible = false
+				HealthBarOutline.Visible = false
+				HealthBar.Visible = false
+				Tracer.Visible = false
 			end
-		end
+		end)
 	end
+	
+	coroutine.wrap(BoxESP)()
 end
 
-while getgenv().auraEnabled do
-	getToolHitRemote()
-
-	if getgenv().hitRemote then
-		for _, plr in pairs(Players:GetPlayers()) do
-			if plr ~= LocalPlayer then
-				local char = plr.Character
-
-				if char then
-					local part = char:FindFirstChildWhichIsA('BasePart')
-
-					if LocalPlayer:DistanceFromCharacter(part.Position) <= maxDistance then
-						hitRemote:FireServer(part)
-					end
-				end
-			end
-		end
-	end
-
-	wait()
+for _, Player in Players:GetChildren() do
+	CreateESP(Player)
 end
+
+Players.PlayerAdded:Connect(CreateESP)
